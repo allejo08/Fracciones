@@ -103,7 +103,7 @@
         // --- 1. CONFIGURACIÓN GLOBAL ---
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1NyKTb4npMFJq-1FXkahlSlXVZAlILwVGG7y-7FemkvoMvqf5gbv1qJg5TO7BEBIb/exec"; 
 
-        // --- 2. ICONOS (Definición única) ---
+        // --- 2. ICONOS ---
         const Icon = ({ path, className, size = 24 }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {path}
@@ -137,15 +137,7 @@
             ChevronRight, User, Moon, Sun, Leaf, BarChart, RefreshCw, Home, ArrowRight, Star, Send
         } = Icons;
 
-        // --- 3. DATOS Y CONTENIDO (Definición única al inicio) ---
-
-        const GLOSSARY = [
-            { term: "Carga", def: "Medida grande de café. Usada como unidad macro." },
-            { term: "Canasta", def: "Recipiente de recolección. Unidad básica en esta app." },
-            { term: "Beneficiadero", def: "Lugar de procesamiento (despulpado, lavado, secado)." },
-            { term: "Fracción Impropia", def: "Numerador > Denominador. Representa > 1 unidad." },
-            { term: "Razón", def: "Comparación entre dos cantidades (ej. Café vs Agua)." },
-        ];
+        // --- 3. DATOS ---
 
         const QUESTION_BANK = [
             { id: 1, q: "Si una canasta llena es 1 unidad, ¿qué representa 3/2?", options: ["3 canastas", "3 mitades (1.5)", "1.5 canastas", "Media canasta"], a: 2, explanation: "3/2 es una fracción impropia. Dividimos 3 entre 2: \\(3 \\div 2 = 1.5\\). Representa 1.5 unidades (canastas)." },
@@ -538,7 +530,7 @@
             }
         ];
 
-        // --- 4. COMPONENTES DEL APP ---
+        // --- 4. COMPONENTES ---
 
         const CelebrationOverlay = ({ show, onNext, nextTitle }) => {
             if (!show) return null;
@@ -611,7 +603,6 @@
             { id: 'level1', label: 'Nivel 1: Recolección', icon: Leaf },
             { id: 'level2', label: 'Nivel 2: Proceso', icon: Clock },
             { id: 'level3', label: 'Nivel 3: Barismo', icon: Coffee },
-            { id: 'glossary', label: 'Glosario', icon: BookOpen },
             { id: 'test', label: 'Test Final', icon: Award },
             ];
 
@@ -766,20 +757,24 @@
 
         const MiniQuiz = ({ questions, onComplete }) => {
             const [current, setCurrent] = useState(0);
-            const [feedback, setFeedback] = useState(null); 
+            const [feedback, setFeedback] = useState(null); // 'correct' | 'incorrect'
             const [completed, setCompleted] = useState(false);
 
+            // Re-render MathJax on state changes within MiniQuiz
             useEffect(() => {
                 if (window.MathJax && window.MathJax.typesetPromise) {
                     window.MathJax.typesetPromise();
                 }
             }, [current, feedback]);
 
+            // Create shuffled options for the current question
             const shuffledOptions = useMemo(() => {
                 const q = questions[current];
+                // Map to keep track of original indices
                 const optionsWithIndex = q.options.map((opt, idx) => ({ text: opt, originalIndex: idx }));
+                // Shuffle
                 return optionsWithIndex.sort(() => Math.random() - 0.5);
-            }, [current, questions]);
+            }, [current, questions]); // Re-shuffle only when question changes
 
             const handleAnswer = (originalIndex) => {
                 if (originalIndex === questions[current].correct) {
@@ -868,6 +863,7 @@
                 {levelData.content}
                 </div>
 
+                {/* Important: Key prop added to reset state when level changes */}
                 {levelData.miniQuiz ? (
                 <MiniQuiz key={levelData.id} questions={levelData.miniQuiz} onComplete={onLevelComplete} />
                 ) : (
@@ -883,25 +879,12 @@
             );
         };
 
-        const GlossaryView = () => (
-            <div className="max-w-3xl mx-auto animate-in fade-in">
-            <h2 className="text-2xl font-bold text-amber-900 dark:text-amber-100 mb-6 flex items-center gap-2">
-                <BookOpen className="text-amber-600" /> Glosario Cafetero
-            </h2>
-            <div className="grid gap-4">
-                {GLOSSARY.map((item, i) => (
-                <div key={i} className="bg-white dark:bg-gray-800 p-5 rounded-xl border-l-4 border-amber-500 shadow-sm hover:shadow-md transition-shadow">
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">{item.term}</h3>
-                    <p className="text-gray-600 dark:text-gray-300">{item.def}</p>
-                </div>
-                ))}
-            </div>
-            </div>
-        );
-
         const TestView = ({ user, onFinish }) => {
             const questions = useMemo(() => {
+                // Shuffle questions
                 const shuffledQs = [...QUESTION_BANK].sort(() => 0.5 - Math.random()).slice(0, 10);
+                
+                // Also shuffle options for each selected question
                 return shuffledQs.map(q => {
                     const shuffledOpts = q.options.map((opt, idx) => ({ text: opt, originalIndex: idx }))
                                                   .sort(() => Math.random() - 0.5);
@@ -921,6 +904,7 @@
             return () => clearInterval(interval);
             }, [isFinished]);
 
+            // Re-render MathJax on state changes within TestView
             useEffect(() => {
                 if (window.MathJax && window.MathJax.typesetPromise) {
                     window.MathJax.typesetPromise();
@@ -945,8 +929,10 @@
 
                 setIsSending(true);
                 
+                // Convertir índices a letras (0->A, 1->B, etc.)
                 const indexToLetter = (idx) => ['A', 'B', 'C', 'D'][idx] || '?';
 
+                // Preparar respuestas
                 const respuestasFormateadas = questions.map(q => {
                     const selectedIndex = answers[q.id];
                     return {
@@ -967,7 +953,7 @@
                 try {
                     await fetch(GOOGLE_SCRIPT_URL, {
                         method: "POST",
-                        mode: "no-cors",
+                        mode: "no-cors", // Importante para que no falle por CORS
                         headers: {
                             "Content-Type": "text/plain;charset=utf-8"
                         },
@@ -986,7 +972,10 @@
                 questions.forEach(q => {
                     if (answers[q.id] === q.a) score++;
                 });
+
+                // Send data BEFORE showing results screen
                 await sendToGoogleForm(score, timer);
+                
                 setIsFinished(true);
                 onFinish({ score, total: 10, time: timer, details: { questions, answers } });
             };
@@ -1136,6 +1125,8 @@
             );
         };
 
+        // --- MAIN APP COMPONENT ---
+
         function CafeMathApp() {
             const [darkMode, setDarkMode] = useState(false);
             const [userData, setUserData] = useState(null);
@@ -1147,6 +1138,7 @@
             const [showCelebration, setShowCelebration] = useState(false);
             const [pendingNextSection, setPendingNextSection] = useState(null);
 
+            // Load persistence
             useEffect(() => {
             const savedUser = localStorage.getItem('cafeMath_user');
             const savedProgress = localStorage.getItem('cafeMath_progress');
@@ -1154,12 +1146,13 @@
 
             if (savedUser) {
                 setUserData(JSON.parse(savedUser));
-                setSection('level0'); 
+                setSection('level0'); // Skip welcome if user exists
             }
             if (savedProgress) setProgress(JSON.parse(savedProgress));
             if (savedTheme === 'dark') setDarkMode(true);
             }, []);
 
+            // Save persistence
             useEffect(() => {
             if (userData) localStorage.setItem('cafeMath_user', JSON.stringify(userData));
             }, [userData]);
@@ -1174,6 +1167,7 @@
             else document.documentElement.classList.remove('dark');
             }, [darkMode]);
 
+            // Re-render MathJax on state changes
             useEffect(() => {
                 if (window.MathJax) {
                     window.MathJax.typesetPromise && window.MathJax.typesetPromise();
@@ -1191,7 +1185,7 @@
                     'test': 'welcome'
                 }[levelId];
 
-                if (next && levelId !== 'test') { 
+                if (next && levelId !== 'test') { // Don't show celebration for Test, it has its own result screen
                     setPendingNextSection(next);
                     setShowCelebration(true);
                 }
@@ -1206,40 +1200,39 @@
             };
 
             const handleReset = () => {
-                if(confirm("¿Estás seguro de borrar todo tu progreso?")) {
-                    localStorage.clear();
-                    window.location.reload();
-                }
+            if(confirm("¿Estás seguro de borrar todo tu progreso?")) {
+                localStorage.clear();
+                window.location.reload();
+            }
             };
 
             const renderContent = () => {
                 switch (section) {
                     case 'welcome':
-                        return <WelcomeScreen userData={userData} setUserData={setUserData} onStart={() => setSection('level0')} />;
+                    return <WelcomeScreen userData={userData} setUserData={setUserData} onStart={() => setSection('level0')} />;
                     case 'level0':
-                        return <LevelView levelData={LEVELS_DATA[0]} onLevelComplete={() => handleLevelComplete('level0')} />;
+                    return <LevelView levelData={LEVELS_DATA[0]} onLevelComplete={() => handleLevelComplete('level0')} />;
                     case 'level1':
-                        return <LevelView levelData={LEVELS_DATA[1]} onLevelComplete={() => handleLevelComplete('level1')} />;
+                    return <LevelView levelData={LEVELS_DATA[1]} onLevelComplete={() => handleLevelComplete('level1')} />;
                     case 'level2':
-                        return <LevelView levelData={LEVELS_DATA[2]} onLevelComplete={() => handleLevelComplete('level2')} />;
+                    return <LevelView levelData={LEVELS_DATA[2]} onLevelComplete={() => handleLevelComplete('level2')} />;
                     case 'level3':
-                        return <LevelView levelData={LEVELS_DATA[3]} onLevelComplete={() => handleLevelComplete('level3')} />;
-                    case 'glossary':
-                        return <div key="glossary-wrapper"><GlossaryView /></div>;
+                    return <LevelView levelData={LEVELS_DATA[3]} onLevelComplete={() => handleLevelComplete('level3')} />;
                     case 'test':
-                        return <TestView user={userData} onFinish={(res) => handleLevelComplete('test')} />;
+                    return <TestView user={userData} onFinish={(res) => handleLevelComplete('test')} />;
                     default:
-                        return <WelcomeScreen onStart={() => setSection('level0')} />;
+                    return <WelcomeScreen onStart={() => setSection('level0')} />;
                 }
             };
 
-            const nextLevelTitle = pendingNextSection ? {
+            // Titles for Celebration Overlay
+            const LEVEL_TITLES = {
                 'level1': 'Nivel 1: Recolección',
                 'level2': 'Nivel 2: Proceso',
                 'level3': 'Nivel 3: Barismo',
                 'test': 'Test Final',
                 'welcome': 'Inicio'
-            }[pendingNextSection] : 'Siguiente Nivel';
+            };
 
             return (
             <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'dark bg-gray-900' : 'bg-[#F9F5F0]'}`}>
@@ -1248,7 +1241,7 @@
                 <CelebrationOverlay 
                     show={showCelebration} 
                     onNext={advanceToNextLevel}
-                    nextTitle={nextLevelTitle} 
+                    nextTitle={pendingNextSection ? LEVEL_TITLES[pendingNextSection] : 'Siguiente Nivel'} 
                 />
 
                 <Header 
@@ -1259,6 +1252,7 @@
                 />
 
                 <div className="flex flex-1 max-w-7xl mx-auto w-full">
+                    {/* Desktop Sidebar: Visible only on large screens */}
                     {userData && (
                     <div className="hidden lg:block w-72 flex-shrink-0 pt-6">
                         <Sidebar 
@@ -1272,6 +1266,7 @@
                     </div>
                     )}
 
+                    {/* Mobile Sidebar: Hidden on large screens to prevent duplication */}
                     <div className="lg:hidden">
                         <Sidebar 
                             isOpen={isMenuOpen} 
@@ -1284,7 +1279,7 @@
                     </div>
 
                     <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
-                        {renderContent()}
+                    {renderContent()}
                     </main>
                 </div>
                 </div>
