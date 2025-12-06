@@ -55,8 +55,7 @@
         }
     </script>
 
-    <!-- MathJax para fracciones verticales -->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <!-- MathJax para fracciones verticales (Polyfill eliminado por seguridad) -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <!-- React & ReactDOM (Versiones de Producción Estables) -->
@@ -1250,7 +1249,7 @@
                 case 'level3':
                 return <LevelView levelData={LEVELS_DATA[3]} onLevelComplete={() => handleLevelComplete('level3')} />;
                 case 'glossary':
-                return <GlossaryView />;
+                return <div key="glossary-wrapper"><GlossaryView /></div>;
                 case 'test':
                 return <TestView user={userData} onFinish={(res) => handleLevelComplete('test')} />;
                 default:
