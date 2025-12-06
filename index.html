@@ -101,24 +101,9 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // --- CONFIGURACIÓN DEL FORMULARIO DE GOOGLE (EDITAR AQUÍ) ---
-        
-        const GOOGLE_FORM_CONFIG = {
-            // Cambia esto a true una vez hayas puesto tus datos reales abajo
-            enabled: false, 
-            
-            // URL del formulario (ejemplo: https://docs.google.com/forms/d/e/.../formResponse)
-            formUrl: "https://docs.google.com/forms/d/e/TU_ID_DE_FORMULARIO_AQUI/formResponse", 
-            
-            // IDs de los campos (entry.XXXXXX)
-            fields: {
-                name: "entry.123456789",   // Campo para Nombre
-                role: "entry.234567890",   // Campo para Rol
-                group: "entry.345678901",  // Campo para Grado/Grupo
-                score: "entry.456789012",  // Campo para Puntaje (ej. 8/10)
-                time: "entry.567890123"    // Campo para Tiempo (ej. 02:30)
-            }
-        };
+        // --- CONFIGURACIÓN DE GOOGLE APPS SCRIPT ---
+        // URL de tu Aplicación Web de Google Apps Script
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1NyKTb4npMFJq-1FXkahlSlXVZAlILwVGG7y-7FemkvoMvqf5gbv1qJg5TO7BEBIb/exec"; 
 
         // --- ICON SYSTEM ---
         const Icon = ({ path, className, size = 24 }) => (
@@ -959,26 +944,44 @@
             };
 
             const sendToGoogleForm = async (score, time) => {
-                if (!GOOGLE_FORM_CONFIG.enabled) {
-                    console.log("Envío a Forms deshabilitado. Configura los IDs en el código.");
+                if (!GOOGLE_SCRIPT_URL) {
+                    console.warn("Falta configurar la URL del Google Script en el código.");
                     return;
                 }
 
                 setIsSending(true);
-                const formData = new FormData();
-                if(GOOGLE_FORM_CONFIG.fields.name) formData.append(GOOGLE_FORM_CONFIG.fields.name, user.name);
-                if(GOOGLE_FORM_CONFIG.fields.role) formData.append(GOOGLE_FORM_CONFIG.fields.role, user.role);
-                if(GOOGLE_FORM_CONFIG.fields.group) formData.append(GOOGLE_FORM_CONFIG.fields.group, user.group);
-                if(GOOGLE_FORM_CONFIG.fields.score) formData.append(GOOGLE_FORM_CONFIG.fields.score, score + "/10");
-                if(GOOGLE_FORM_CONFIG.fields.time) formData.append(GOOGLE_FORM_CONFIG.fields.time, formatTime(time));
+                
+                // Convertir índices a letras (0->A, 1->B, etc.)
+                const indexToLetter = (idx) => ['A', 'B', 'C', 'D'][idx] || '?';
+
+                // Preparar respuestas
+                const respuestasFormateadas = questions.map(q => {
+                    const selectedIndex = answers[q.id];
+                    return {
+                        id: q.id,
+                        letra: selectedIndex !== undefined ? indexToLetter(selectedIndex) : '-'
+                    };
+                });
+
+                const payload = {
+                    nombre: user.name,
+                    rol: user.role,
+                    grupo: user.group,
+                    puntaje: score + "/10",
+                    tiempo: formatTime(time),
+                    respuestas: respuestasFormateadas
+                };
 
                 try {
-                    await fetch(GOOGLE_FORM_CONFIG.formUrl, {
+                    await fetch(GOOGLE_SCRIPT_URL, {
                         method: "POST",
-                        mode: "no-cors",
-                        body: formData
+                        mode: "no-cors", // Importante para que no falle por CORS
+                        headers: {
+                            "Content-Type": "text/plain;charset=utf-8"
+                        },
+                        body: JSON.stringify(payload)
                     });
-                    console.log("Datos enviados a Google Form");
+                    console.log("Datos enviados a Google Script");
                 } catch (e) {
                     console.error("Error al enviar", e);
                 } finally {
@@ -1010,7 +1013,7 @@
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden mb-8">
                     <div className="bg-gradient-to-r from-amber-600 to-amber-800 p-8 text-white text-center">
                     <h2 className="text-3xl font-bold mb-2">¡Test Finalizado!</h2>
-                    {GOOGLE_FORM_CONFIG.enabled && <p className="text-sm bg-white/20 inline-block px-3 py-1 rounded-full mt-2">✅ Resultados enviados</p>}
+                    {GOOGLE_SCRIPT_URL && <p className="text-sm bg-white/20 inline-block px-3 py-1 rounded-full mt-2">✅ Resultados enviados</p>}
                     <div className="flex justify-center gap-8 mt-6">
                         <div className="text-center">
                         <div className="text-4xl font-bold">{score}/10</div>
